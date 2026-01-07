@@ -11,6 +11,7 @@ A demonstration of the `maplibre-gl-multiple-color-draw` library, showcasing adv
 - **TypeScript Support**: Built with TypeScript for better developer experience
 - **Modern Stack**: Utilizes Vite, React 19, and Tailwind CSS
 
+
 ## 🛠️ Installation
 
 1. Clone the repository:

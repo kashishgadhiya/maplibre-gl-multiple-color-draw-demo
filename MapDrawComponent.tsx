@@ -1,25 +1,33 @@
-import { useEffect, useRef, useState } from "react";
-import maplibregl from "maplibre-gl";
+import maplibregl, { Map as MaplibreMap } from "maplibre-gl";
 import { useMapDraw } from "maplibre-gl-multiple-color-draw";
 import "maplibre-gl/dist/maplibre-gl.css";
+import type { ChangeEvent } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 
 function MapDrawComponent() {
-  const mapContainer = useRef(null);
-  const map = useRef(null);
+  const mapContainer = useRef<HTMLDivElement>(null);
+  const mapRef = useRef<MaplibreMap | null>(null);
   const [currentMode, setCurrentMode] = useState<string | null>(null);
   const [color, setColor] = useState("#3388ff");
   const [thickness, setThickness] = useState(2);
   const [mapReady, setMapReady] = useState(false);
 
   useEffect(() => {
-    if (map.current) return;
+    if (mapRef.current || !mapContainer.current) return;
 
-    map.current = new maplibregl.Map({
+    mapRef.current = new maplibregl.Map({
       container: mapContainer.current,
       style: "https://basemaps.cartocdn.com/gl/voyager-gl-style/style.json",
       center: [0, 0],
       zoom: 2,
     });
+
+    return () => {
+      if (mapRef.current) {
+        mapRef.current.remove();
+        mapRef.current = null;
+      }
+    };
   }, []);
 
   // Use the MapDraw hook
@@ -30,13 +38,13 @@ function MapDrawComponent() {
     setThickness: setDrawThickness,
     getGeoJSON,
     clear,
-  } = useMapDraw(map.current, {
-    color: color,
-    thickness: thickness,
+  } = useMapDraw(mapRef.current, {
+    color,
+    thickness,
   });
 
   useEffect(() => {
-    const currentMap = map.current;
+    const currentMap = mapRef.current;
     if (!currentMap) return;
 
     if (currentMap.loaded()) {
@@ -48,51 +56,51 @@ function MapDrawComponent() {
         setMapReady(true);
       });
     }
+
+    return () => {
+      if (currentMap) {
+        currentMap.remove();
+      }
+    };
   }, [enable]);
 
-  const handleModeChange = (mode: string) => {
-    if (!mapReady || !map.current) {
-      const currentMap = map.current;
-      if (currentMap && !currentMap.loaded()) {
-        currentMap.once("load", () => {
-          enable();
-          setMode(
-            mode as
-              | "line"
-              | "dashed-line"
-              | "freehand"
-              | "freehand-dashed"
-              | "polygon"
-              | "select"
-          );
-          setCurrentMode(mode);
-          setMapReady(true);
-        });
+  const handleModeChange = useCallback(
+    (mode: string) => {
+      const currentMap = mapRef.current;
+      if (!currentMap) return;
+
+      const applyMode = () => {
+        enable();
+        setMode(
+          mode as
+            | "line"
+            | "dashed-line"
+            | "freehand"
+            | "freehand-dashed"
+            | "polygon"
+            | "select"
+        );
+        setCurrentMode(mode);
+        setMapReady(true);
+      };
+
+      if (currentMap.loaded()) {
+        applyMode();
+      } else {
+        currentMap.once("load", applyMode);
       }
-      return;
-    }
+    },
+    [enable, setMode]
+  );
 
-    enable();
-    setMode(
-      mode as
-        | "line"
-        | "dashed-line"
-        | "freehand"
-        | "freehand-dashed"
-        | "polygon"
-        | "select"
-    );
-    setCurrentMode(mode);
-  };
-
-  const handleColorChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleColorChange = (e: ChangeEvent<HTMLInputElement>) => {
     const newColor = e.target.value;
     setColor(newColor);
     setDrawColor(newColor);
   };
 
-  const handleThicknessChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const newThickness = parseInt(e.target.value);
+  const handleThicknessChange = (e: ChangeEvent<HTMLInputElement>) => {
+    const newThickness = parseInt(e.target.value, 10);
     setThickness(newThickness);
     setDrawThickness(newThickness);
   };
