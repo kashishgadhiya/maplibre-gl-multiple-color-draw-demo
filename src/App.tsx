@@ -1,4 +1,4 @@
-import MapDrawComponent from "../MapDrawComponent";
+import MapDrawComponent from "./MapDrawComponent";
 
 function App() {
   return (
