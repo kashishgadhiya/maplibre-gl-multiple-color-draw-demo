@@ -10,7 +10,7 @@ function MapDrawComponent() {
   const [currentMode, setCurrentMode] = useState<string | null>(null);
   const [color, setColor] = useState("#3388ff");
   const [thickness, setThickness] = useState(2);
-  const [mapReady, setMapReady] = useState(false);
+  const [_mapReady, setMapReady] = useState(false);
 
   useEffect(() => {
     if (mapRef.current || !mapContainer.current) return;
@@ -30,7 +30,6 @@ function MapDrawComponent() {
     };
   }, []);
 
-  // Use the MapDraw hook
   const {
     enable,
     setMode,
@@ -47,21 +46,16 @@ function MapDrawComponent() {
     const currentMap = mapRef.current;
     if (!currentMap) return;
 
-    if (currentMap.loaded()) {
+    const initializeDraw = () => {
       enable();
       setMapReady(true);
-    } else {
-      currentMap.once("load", () => {
-        enable();
-        setMapReady(true);
-      });
-    }
-
-    return () => {
-      if (currentMap) {
-        currentMap.remove();
-      }
     };
+
+    if (currentMap.loaded()) {
+      initializeDraw();
+    } else {
+      currentMap.once("load", initializeDraw);
+    }
   }, [enable]);
 
   const handleModeChange = useCallback(
@@ -125,41 +119,39 @@ function MapDrawComponent() {
   };
 
   return (
-    <div style={{ display: "flex", height: "100vh", width: "100%" }}>
+    <div style={{ display: "flex", height: "100vh" }}>
+      {/* Sidebar */}
       <div
         style={{
-          width: "250px",
-          backgroundColor: "#fff",
+          width: "300px",
           padding: "20px",
+          backgroundColor: "#f5f5f5",
+          borderRight: "1px solid #ddd",
           overflowY: "auto",
-          borderRight: "1px solid #e0e0e0",
-          boxShadow: "0 2px 4px rgba(0,0,0,0.1)",
         }}
       >
-        <h2
-          style={{ fontSize: "18px", fontWeight: "bold", marginBottom: "20px" }}
-        >
+        <h2 style={{ marginTop: 0, fontSize: "20px", marginBottom: "20px" }}>
           Map Drawing Tool
         </h2>
 
+        {/* Mode Selection */}
         <div style={{ marginBottom: "20px" }}>
           <label
             style={{
-              fontSize: "12px",
-              fontWeight: "600",
-              color: "#666",
               display: "block",
               marginBottom: "8px",
+              fontWeight: "600",
+              fontSize: "14px",
             }}
           >
             Mode{" "}
             {!currentMode && (
-              <span style={{ color: "#999", fontSize: "10px" }}>
+              <span style={{ fontWeight: "normal", color: "#666" }}>
                 (Select a mode to start)
               </span>
             )}
           </label>
-          <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
+          <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
             {[
               "line",
               "dashed-line",
@@ -190,14 +182,14 @@ function MapDrawComponent() {
           </div>
         </div>
 
+        {/* Color Picker */}
         <div style={{ marginBottom: "20px" }}>
           <label
             style={{
-              fontSize: "12px",
-              fontWeight: "600",
-              color: "#666",
               display: "block",
               marginBottom: "8px",
+              fontWeight: "600",
+              fontSize: "14px",
             }}
           >
             Color
@@ -216,14 +208,14 @@ function MapDrawComponent() {
           />
         </div>
 
+        {/* Thickness Slider */}
         <div style={{ marginBottom: "20px" }}>
           <label
             style={{
-              fontSize: "12px",
-              fontWeight: "600",
-              color: "#666",
               display: "block",
               marginBottom: "8px",
+              fontWeight: "600",
+              fontSize: "14px",
             }}
           >
             Thickness: {thickness}px
@@ -238,22 +230,22 @@ function MapDrawComponent() {
           />
         </div>
 
-        <div style={{ display: "flex", gap: "8px", marginBottom: "20px" }}>
+        {/* Action Buttons */}
+        <div style={{ display: "flex", gap: "10px", marginBottom: "20px" }}>
           <button
             onClick={handleClear}
             style={{
               flex: 1,
-              padding: "8px",
-              fontSize: "13px",
+              padding: "10px",
+              fontSize: "14px",
               border: "1px solid #ddd",
               borderRadius: "4px",
               backgroundColor: "#fff",
               cursor: "pointer",
-              transition: "all 0.2s",
+              fontWeight: "500",
             }}
             onMouseEnter={(e) =>
-              ((e.target as HTMLButtonElement).style.backgroundColor =
-                "#f5f5f5")
+              ((e.target as HTMLButtonElement).style.backgroundColor = "#f5f5f5")
             }
             onMouseLeave={(e) =>
               ((e.target as HTMLButtonElement).style.backgroundColor = "#fff")
@@ -265,17 +257,16 @@ function MapDrawComponent() {
             onClick={handleExport}
             style={{
               flex: 1,
-              padding: "8px",
-              fontSize: "13px",
+              padding: "10px",
+              fontSize: "14px",
               border: "1px solid #ddd",
               borderRadius: "4px",
               backgroundColor: "#fff",
               cursor: "pointer",
-              transition: "all 0.2s",
+              fontWeight: "500",
             }}
             onMouseEnter={(e) =>
-              ((e.target as HTMLButtonElement).style.backgroundColor =
-                "#f5f5f5")
+              ((e.target as HTMLButtonElement).style.backgroundColor = "#f5f5f5")
             }
             onMouseLeave={(e) =>
               ((e.target as HTMLButtonElement).style.backgroundColor = "#fff")
@@ -285,31 +276,25 @@ function MapDrawComponent() {
           </button>
         </div>
 
+        {/* Tips */}
         <div
           style={{
-            fontSize: "11px",
-            color: "#888",
-            lineHeight: "1.5",
-            backgroundColor: "#f9f9f9",
-            padding: "10px",
+            padding: "12px",
+            backgroundColor: "#e3f2fd",
             borderRadius: "4px",
+            fontSize: "13px",
+            lineHeight: "1.6",
           }}
         >
           <strong>Tips:</strong>
-          <div>• Line/Polygon: Click points, double-click to finish</div>
-          <div>• Freehand: Click to start, move, click to finish</div>
-          <div>• Select: Click to select, drag to move</div>
+          <ul style={{ margin: "8px 0 0 0", paddingLeft: "20px" }}>
+            <li>Line/Polygon: Click points, double-click to finish</li>
+            <li>Freehand: Click to start, move, click to finish</li>
+            <li>Select: Click to select, drag to move (Polygon only)</li>
+          </ul>
         </div>
       </div>
-
-      <div
-        ref={mapContainer}
-        style={{
-          flex: 1,
-          height: "100%",
-          width: "100%",
-        }}
-      />
+      <div ref={mapContainer} style={{ flex: 1 }} />
     </div>
   );
 }
